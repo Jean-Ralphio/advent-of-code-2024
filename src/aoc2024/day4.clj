@@ -23,8 +23,8 @@
 (defn get-diag-str [x y dir]
   (let [[dx dy] (get directions dir)
         diag-elems (for [offs (range 0 4)
-                       :let [c (get-char (dx x offs) (dy y offs))]]
-                   c)]
+                         :let [c (get-char (dx x offs) (dy y offs))]]
+                     c)]
     (apply str diag-elems)))
 
 (defn count-occurrences [re line]
@@ -63,13 +63,13 @@
 ;; Part 2
 
 (defn right-diag [x y]
-  (let [mid (get-char  x y)
+  (let [mid (get-char x y)
         right-down (get-char (+ x 1) (+ y 1))
         right-up (get-char (- x 1) (- y 1))]
     (str right-up mid right-down)))
 
 (defn left-diag [x y]
-  (let [mid (get-char  x y)
+  (let [mid (get-char x y)
         left-down (get-char (- x 1) (+ y 1))
         left-up (get-char (+ x 1) (- y 1))]
     (str left-up mid left-down)))
