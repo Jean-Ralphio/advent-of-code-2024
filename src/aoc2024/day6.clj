@@ -1,9 +1,6 @@
 (ns aoc2024.day6
-  (:gen-class))
-
-(require '[clojure.string :as string]
-         '[clojure.java.io :as io]
-         '[clojure.set :as cset])
+  (:require [clojure.string :as string]
+            [clojure.java.io :as io]))
 
 (def rows (->> (string/split-lines (slurp (io/resource "day6.txt")))))
 (def input (string/join rows))
@@ -14,24 +11,20 @@
            :left  -1
            :right 1})
 
-(defn next-index
-  ([idx direction]
-   (next-index idx direction input))
-  ([idx direction lab]
-   (let [next-idx (+ idx (step direction))
-         valid? (case direction
-                  :up (> next-idx 0)
-                  :down (< next-idx (count lab))
-                  :left (pos? (mod idx row-length))
-                  :right (pos? (mod next-idx row-length)))]
-     (if valid? next-idx -1))))
+(def next-dir {:up    :right
+               :right :down
+               :down  :left
+               :left  :up})
 
-(defn next-dir [current-dir]
-  (case current-dir
-    :up :right
-    :down :left
-    :left :up
-    :right :down))
+(defn next-index
+  [idx direction]
+  (let [next-idx (+ idx (step direction))
+        within-bounds? (case direction
+                         :up (> next-idx 0)
+                         :down (< next-idx (count input))
+                         :left (pos? (mod idx row-length))
+                         :right (pos? (mod next-idx row-length)))]
+    (if within-bounds? next-idx -1)))
 
 (defn predict-positions
   ([idx]
@@ -42,16 +35,14 @@
           visited #{}]
      (let [next-idx (next-index curr-idx dir)
            next-char (get input next-idx)]
-       (if (nil? next-char)
-         (conj visited curr-idx)
-         (if (= \# next-char)
-           (recur (next-dir dir) curr-idx (conj visited curr-idx))
-           (recur dir next-idx (conj visited curr-idx))))))))
+       (cond
+         (nil? next-char) (conj visited curr-idx)
+         (= \# next-char) (recur (next-dir dir) curr-idx (conj visited curr-idx))
+         :else (recur dir next-idx (conj visited curr-idx)))))))
 
 (defn part1 []
-  (let [m (re-matcher #"\^" input)
-        start (re-find m)]
-    (count (predict-positions (.start m)))))
+  (let [start (string/index-of input "^")]
+    (count (predict-positions start))))
 
 ;; Part 2
 
@@ -62,22 +53,19 @@
    (loop [dir direction
           curr-idx idx
           visited #{}]
-     (let [next-idx (next-index curr-idx dir lab)
+     (let [next-idx (next-index curr-idx dir)
            next-char (get lab next-idx)
            pos [curr-idx dir]]
-       (if (contains? visited pos)
-         true
-         (if (nil? next-char)
-           false
-           (if (= \# next-char)
-             (recur (next-dir dir) curr-idx (conj visited pos))
-             (recur dir next-idx (conj visited pos)))))))))
+       (cond
+         (contains? visited pos) true
+         (nil? next-char) false
+         (= \# next-char) (recur (next-dir dir) curr-idx (conj visited pos))
+         :else (recur dir next-idx (conj visited pos)))))))
 
 (defn part2 []
-  (let [m (re-matcher #"\^" input)
-        f (re-find m)
-        start (.start m)
-        positions (cset/difference (predict-positions start) #{start})
+  (let [start (string/index-of input "^")
+        positions (disj (predict-positions start) start)
         ; how elegant
-        possible-loops (map #(str (subs input 0 %) "#" (subs input (inc %)) positions))]
+        possible-loops (for [pos positions]
+                         (str (subs input 0 pos) "#" (subs input (inc pos))))]
     (count (filter #(has-loop start %) possible-loops))))
